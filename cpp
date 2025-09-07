@@ -1,0 +1,406 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ITENS       10
+#define MAX_NOME       50
+
+// =========================
+// Estruturas de dados
+// =========================
+
+// Mochila usando vetor (lista estática)
+typedef struct {
+    char itens[MAX_ITENS][MAX_NOME];
+    int quantidade;
+} MochilaEstatica;
+
+// Nó para mochila encadeada
+typedef struct No {
+    char nome[MAX_NOME];
+    struct No *proximo;
+} No;
+
+typedef No* MochilaEncadeada;
+
+// =========================
+// Protótipos – Mochila Estática
+// =========================
+void inicializarMochilaEstatica(MochilaEstatica *m);
+void inserirItemEstatica(MochilaEstatica *m, const char *nome);
+void removerItemEstatica(MochilaEstatica *m, const char *nome);
+void listarItensEstatica(const MochilaEstatica *m);
+int  buscarItemEstatica(const MochilaEstatica *m, const char *nome, int *comparisons);
+
+// =========================
+// Protótipos – Mochila Encadeada
+// =========================
+void inicializarMochilaEncadeada(MochilaEncadeada *m);
+void inserirItemEncadeada(MochilaEncadeada *m, const char *nome);
+void removerItemEncadeada(MochilaEncadeada *m, const char *nome);
+void listarItensEncadeada(const MochilaEncadeada *m);
+int  buscarItemEncadeada(const MochilaEncadeada *m, const char *nome, int *comparisons);
+void liberarMochilaEncadeada(MochilaEncadeada *m);
+
+// =========================
+// Menus
+// =========================
+void menuMochilaEstatica(MochilaEstatica *m);
+void menuMochilaEncadeada(MochilaEncadeada *m);
+
+// =========================
+// main()
+// =========================
+int main() {
+    MochilaEstatica   est;
+    MochilaEncadeada  enc;
+
+    inicializarMochilaEstatica(&est);
+    inicializarMochilaEncadeada(&enc);
+
+    int opcao;
+
+    do {
+        printf("\n=== Gerenciamento de Mochila ===\n");
+        printf("1. Mochila Estática (vetor)\n");
+        printf("2. Mochila Encadeada\n");
+        printf("0. Sair\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
+        getchar(); // limpa '\n'
+
+        switch (opcao) {
+            case 1:
+                menuMochilaEstatica(&est);
+                break;
+            case 2:
+                menuMochilaEncadeada(&enc);
+                break;
+            case 0:
+                liberarMochilaEncadeada(&enc);
+                printf("Tchau!\n");
+                break;
+            default:
+                printf("Opção inválida!\n");
+        }
+    } while (opcao != 0);
+
+    return 0;
+}
+
+// =========================
+// Implementação – Mochila Estática
+// =========================
+
+void inicializarMochilaEstatica(MochilaEstatica *m) {
+    m->quantidade = 0;
+}
+
+void inserirItemEstatica(MochilaEstatica *m, const char *nome) {
+    if (m->quantidade == MAX_ITENS) {
+        printf("Erro: mochila cheia!\n");
+        return;
+    }
+    strcpy(m->itens[m->quantidade++], nome);
+    printf("'%s' inserido.\n", nome);
+}
+
+void removerItemEstatica(MochilaEstatica *m, const char *nome) {
+    int i, pos = -1;
+    for (i = 0; i < m->quantidade; i++) {
+        if (strcmp(m->itens[i], nome) == 0) {
+            pos = i;
+            break;
+        }
+    }
+    if (pos == -1) {
+        printf("Erro: '%s' não encontrado.\n", nome);
+        return;
+    }
+    for (i = pos; i + 1 < m->quantidade; i++) {
+        strcpy(m->itens[i], m->itens[i+1]);
+    }
+    m->quantidade--;
+    printf("'%s' removido.\n", nome);
+}
+
+void listarItensEstatica(const MochilaEstatica *m) {
+    if (m->quantidade == 0) {
+        printf("Mochila está vazia.\n");
+        return;
+    }
+    printf("Itens na mochila estática:\n");
+    for (int i = 0; i < m->quantidade; i++) {
+        printf(" %2d: %s\n", i+1, m->itens[i]);
+    }
+}
+
+int buscarItemEstatica(const MochilaEstatica *m, const char *nome, int *comparisons) {
+    *comparisons = 0;
+    for (int i = 0; i < m->quantidade; i++) {
+        (*comparisons)++;
+        if (strcmp(m->itens[i], nome) == 0) {
+            return i; // índice encontrado
+        }
+    }
+    return -1; // não achou
+}
+
+// =========================
+// Implementação – Mochila Encadeada
+// =========================
+
+void inicializarMochilaEncadeada(MochilaEncadeada *m) {
+    *m = NULL;
+}
+
+void inserirItemEncadeada(MochilaEncadeada *m, const char *nome) {
+    No *novo = malloc(sizeof(No));
+    if (!novo) {
+        printf("Erro de memória.\n");
+        return;
+    }
+    strcpy(novo->nome, nome);
+    novo->proximo = NULL;
+
+    if (*m == NULL) {
+        *m = novo;
+    } else {
+        No *atual = *m;
+        while (atual->proximo) {
+            atual = atual->proximo;
+        }
+        atual->proximo = novo;
+    }
+    printf("'%s' inserido.\n", nome);
+}
+
+void removerItemEncadeada(MochilaEncadeada *m, const char *nome) {
+    No *atual = *m, *ant = NULL;
+
+    while (atual && strcmp(atual->nome, nome) != 0) {
+        ant = atual;
+        atual = atual->proximo;
+    }
+    if (!atual) {
+        printf("Erro: '%s' não encontrado.\n", nome);
+        return;
+    }
+    if (!ant) {
+        *m = atual->proximo;
+    } else {
+        ant->proximo = atual->proximo;
+    }
+    free(atual);
+    printf("'%s' removido.\n", nome);
+}
+
+void listarItensEncadeada(const MochilaEncadeada *m) {
+    if (!*m) {
+        printf("Mochila está vazia.\n");
+        return;
+    }
+    printf("Itens na mochila encadeada:\n");
+    No *at = *m;
+    int idx = 1;
+    while (at) {
+        printf(" %2d: %s\n", idx++, at->nome);
+        at = at->proximo;
+    }
+}
+
+int buscarItemEncadeada(const MochilaEncadeada *m, const char *nome, int *comparisons) {
+    *comparisons = 0;
+    No *at = *m;
+    int pos = 0;
+    while (at) {
+        (*comparisons)++;
+        if (strcmp(at->nome, nome) == 0) {
+            return pos;
+        }
+        at = at->proximo;
+        pos++;
+    }
+    return -1;
+}
+
+void liberarMochilaEncadeada(MochilaEncadeada *m) {
+    No *at = *m;
+    while (at) {
+        No *tmp = at;
+        at = at->proximo;
+        free(tmp);
+    }
+    *m = NULL;
+}
+
+// =========================
+// Menu – Mochila Estática
+// =========================
+void menuMochilaEstatica(MochilaEstatica *m) {
+    int op;
+    char nome[MAX_NOME];
+    do {
+        printf("\n-- Mochila Estática --\n");
+        printf("1. Inserir\n");
+        printf("2. Remover\n");
+        printf("3. Listar\n");
+        printf("4. Buscar\n");
+        printf("0. Voltar\n");
+        printf("Escolha: ");
+        scanf("%d", &op);
+        getchar();
+
+        switch (op) {
+            case 1:
+                printf("Nome do item: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                inserirItemEstatica(m, nome);
+                break;
+            case 2:
+                printf("Nome do item a remover: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                removerItemEstatica(m, nome);
+                break;
+            case 3:
+                listarItensEstatica(m);
+                break;
+            case 4: {
+                int modo, pos, comp_auto, comp_manual;
+                printf("Buscar: 1-Manual  2-Automatizada: ");
+                scanf("%d", &modo);
+                getchar();
+                printf("Nome do item: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+
+                // Busca Manual
+                if (modo == 1) {
+                    listarItensEstatica(m);
+                    printf("Digite a posição que você acredita ser (1-%d): ",
+                           m->quantidade);
+                    scanf("%d", &pos);
+                    getchar();
+                    comp_manual = pos;
+                    if (pos >= 1 && pos <= m->quantidade
+                        && strcmp(m->itens[pos-1], nome) == 0) {
+                        printf("Manual: encontrado na posição %d\n", pos);
+                    } else {
+                        printf("Manual: não encontrado ou posição incorreta.\n");
+                    }
+                    pos = buscarItemEstatica(m, nome, &comp_auto) + 1;
+                }
+                // Busca Automatizada
+                else {
+                    pos = buscarItemEstatica(m, nome, &comp_auto) + 1;
+                    if (pos > 0) {
+                        printf("Automatizada: encontrado na posição %d\n", pos);
+                    } else {
+                        printf("Automatizada: não encontrado.\n");
+                    }
+                    comp_manual = 0;
+                }
+
+                printf("Comparações - Automática: %d", comp_auto);
+                if (modo == 1) {
+                    printf(" | Manual (você): %d", comp_manual);
+                }
+                printf("\n");
+                break;
+            }
+            case 0:
+                break;
+            default:
+                printf("Opção inválida!\n");
+        }
+    } while (op != 0);
+}
+
+// =========================
+// Menu – Mochila Encadeada
+// =========================
+void menuMochilaEncadeada(MochilaEncadeada *m) {
+    int op;
+    char nome[MAX_NOME];
+    do {
+        printf("\n-- Mochila Encadeada --\n");
+        printf("1. Inserir\n");
+        printf("2. Remover\n");
+        printf("3. Listar\n");
+        printf("4. Buscar\n");
+        printf("0. Voltar\n");
+        printf("Escolha: ");
+        scanf("%d", &op);
+        getchar();
+
+        switch (op) {
+            case 1:
+                printf("Nome do item: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                inserirItemEncadeada(m, nome);
+                break;
+            case 2:
+                printf("Nome do item a remover: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+                removerItemEncadeada(m, nome);
+                break;
+            case 3:
+                listarItensEncadeada(m);
+                break;
+            case 4: {
+                int modo, pos, comp_auto, comp_manual;
+                printf("Buscar: 1-Manual  2-Automatizada: ");
+                scanf("%d", &modo);
+                getchar();
+                printf("Nome do item: ");
+                fgets(nome, MAX_NOME, stdin);
+                nome[strcspn(nome, "\n")] = '\0';
+
+                // Manual
+                if (modo == 1) {
+                    listarItensEncadeada(m);
+                    printf("Digite a posição que você acha (1...): ");
+                    scanf("%d", &pos);
+                    getchar();
+                    comp_manual = pos;
+                    // verificando
+                    No *at = *m;
+                    for (int i = 1; i < pos && at; i++) {
+                        at = at->proximo;
+                    }
+                    if (at && strcmp(at->nome, nome) == 0) {
+                        printf("Manual: encontrado na posição %d\n", pos);
+                    } else {
+                        printf("Manual: não encontrado ou posição incorreta.\n");
+                    }
+                    pos = buscarItemEncadeada(m, nome, &comp_auto) + 1;
+                }
+                // Automática
+                else {
+                    pos = buscarItemEncadeada(m, nome, &comp_auto) + 1;
+                    if (pos > 0) {
+                        printf("Automatizada: encontrado na posição %d\n", pos);
+                    } else {
+                        printf("Automatizada: não encontrado.\n");
+                    }
+                    comp_manual = 0;
+                }
+
+                printf("Comparações - Automática: %d", comp_auto);
+                if (modo == 1) {
+                    printf(" | Manual (você): %d", comp_manual);
+                }
+                printf("\n");
+                break;
+            }
+            case 0:
+                break;
+            default:
+                printf("Opção inválida!\n");
+        }
+    } while (op != 0);
+}
